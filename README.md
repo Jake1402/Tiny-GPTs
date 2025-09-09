@@ -142,7 +142,7 @@ My future plans and improvements include:
 - Allow the code to be ran purely through command lines rather than editing variables.
 
 #### References
-[Attention is all you need](https://arxiv.org/abs/1706.03762) The paper that propose the transformer.
-[GPT Paper](https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf) The paper that proposed GPT style models.
-[LLMs are few shot learners](https://arxiv.org/abs/2005.14165) The paper showing scalability of GPTs
-[StatQuests transformer](https://www.youtube.com/watch?v=C9QSpl5nmrY) This video helped a lot, especially early on. Fantastic must watch.
+[Attention is all you need](https://arxiv.org/abs/1706.03762) The paper that propose the transformer.<br />
+[GPT Paper](https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf) The paper that proposed GPT style models.<br />
+[LLMs are few shot learners](https://arxiv.org/abs/2005.14165) The paper showing scalability of GPTs<br />
+[StatQuests transformer](https://www.youtube.com/watch?v=C9QSpl5nmrY) This video helped a lot, especially early on. Fantastic must watch.<br />
