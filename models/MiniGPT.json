@@ -1,0 +1,8 @@
+{
+    "vocab": 32,
+    "d_model": 8,
+    "layers": 24,
+    "masked": true,
+    "heads": 1,
+    "max_tokens": 256
+}
