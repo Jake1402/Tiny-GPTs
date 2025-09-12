@@ -43,7 +43,7 @@ As can be seen from above creating, saving and loading has been made as simple a
 To make training these models as easy possible I've broken down training into two different files. These files are named `Training-pretrain.py` and `Training-finetune.py` the correct way to train your models is to call pretrain first, this is designed to teach the models the basic of text like nouns, verbs, and sentiments for example. The model at this stage won't be suitable for tasks but will have a "background knowledge" in how text should be structured. After this we then fine tune the model for desired traits, these traits can be text generation or filling in missing characters that maybe missing from the string.
 
 #### Building Vocabs
-Inside the `datasets` directory I have two files named [simple_tokenizer.py](dataset/simple_tokenizer.py) and [vocab_builder.py](dataset/vocab_builder.py) (As a disclaimer GPT-5 build the main tokenizer. I modified code for suffix and concatenation removal) Vocab building is done rather easily by calling [vocab_builder.py]() in the command line.
+Inside the `datasets` directory I have two files named [simple_tokenizer.py](dataset/simple_tokenizer.py) and [vocab_builder.py](dataset/vocab_builder.py) (As a disclaimer GPT-5 build the main tokenizer. I modified code for suffix and concatenation removal) Vocab building is done rather easily by calling [vocab_builder.py](dataset/vocab_builder.py) in the command line.
 ```cmd
 (pytorch) D:\Python\LLM\dataset>python vocab_builder.py -h
 usage: vocab_builder.py [-h] --name NAME [--f F] --csv CSV [--skip SKIP]
