@@ -13,7 +13,7 @@ __location__ = os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 def args_builder():
-    parser = argparse.ArgumentParser(description="""EDA.py Will build your datasets as save them in npy file format.
+    parser = argparse.ArgumentParser(description="""ds_builder.py Will build your datasets as save them in npy file format.
 Output format will be the tokenised data with features being the 
 initial inputs and labels the output shifted right. Beginning/End
 of sequence tags are included by default.
@@ -199,4 +199,5 @@ if __name__ == "__main__":
     else:
         fill_empty(text_list, tokenizer=tokenizer, missing_chance=_HIDE_RATE_, padding_id=tokenizer.unk_id, max_len=MAX_LENGTH_, name_header=NPY_DS_NAME, inc_tags=INC_TAGS)
         next_token_prediction(text_list, tokenizer=tokenizer, max_len=MAX_LENGTH_, name_header=NPY_DS_NAME, inc_tags=INC_TAGS)
+
     print("Finished")
