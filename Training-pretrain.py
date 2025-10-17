@@ -9,7 +9,7 @@ import numpy as np
 from time import time
 import json
 
-import GPT
+from GPT import GPT, save_model, load_model
 from custom_datasets import TextDataset
 from dataset.simple_tokenizer import SimpleTokenizer
 
@@ -42,9 +42,9 @@ def collate_fn(batch):
 if __name__ == "__main__":
     
     torch.cuda.empty_cache()
-    DIR_OF_VOCAB_ = "dataset/vocab.json"
-    FEATURES_DIR_ = "dataset/Text-Completion-Features.npy"
-    _LABELS__DIR_ = "dataset/Text-Completion-Labels.npy"
+    DIR_OF_VOCAB_ = "dataset/vocabs/small-vocab.json"                        # YOUR VOCAB
+    FEATURES_DIR_ = "dataset/compiled-datasets/Text-Generation-Features.npy" # YOUR FEATURES
+    _LABELS__DIR_ = "dataset/compiled-datasets/Text-Generation-Labels.npy"   # YOUR LABELS
     global PADDING_ID, PADDING_IGNORE
     
     tokenizer = SimpleTokenizer()
@@ -54,27 +54,28 @@ if __name__ == "__main__":
     tokenizer.inv_vocab = {int(i): w for w, i in vocab.items()}
     tokenizer.fitted = True
     
-    VOCAB_SIZE = 7642
-    D_MODEL    = 256
+    VOCAB_SIZE = 7823
+    D_MODEL    = 128
     LAYERS     = 12
     NUM_HEADS  = 8
-    MAX_TOKENS = 4096
+    MAX_TOKENS = 2048
+    MASKED = True
     PADDING_ID = tokenizer.pad_id
     PADDING_IGNORE = -100
 
-    EPOCHS = 0
+    EPOCHS = 50
     GRAD_CLIPS = 1
     PRINT_EVERY = 1
     SAVE_EVERY = 1
-    BATCH = 4
+    BATCH = 6
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    #devices = [i for i in range(torch.cuda.device_count())]
     #device="cpu"           # For debugging cuda problems (usual come from dim errors)
-    badgerMLM = GPT.GPT(
+    badgerMLM = GPT(
         vocab_size=VOCAB_SIZE,
         d_model=D_MODEL,
         layers=LAYERS,
+        masked=MASKED,
         num_heads=NUM_HEADS,
         max_tokens=MAX_TOKENS
     ).to("cuda:0")
@@ -124,6 +125,6 @@ if __name__ == "__main__":
                 
         print(f"Time took - {time() - init_time}")
         if epoch % SAVE_EVERY == 0:
-            badgerMLM.save_model(f"Pretrained-{epoch}")
-    badgerMLM.save_model(f"Pretrained-Finished")
+            save_model(f"Pretrained-{epoch}", badgerMLM)
+    save_model(f"Pretrained-Finished", badgerMLM)
     print("Training complete.")
