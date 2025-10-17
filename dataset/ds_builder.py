@@ -65,6 +65,13 @@ of sequence tags are included by default.
         help="Decides to add roles like OPERATOR/AGENT"
     )
     parser.add_argument(
+        "--pad",
+        type=bool,
+        required=False,
+        default=True,
+        help="Decides pad sequences to max length default true"
+    )
+    parser.add_argument(
         "--operation",
         type=int,
         required=False,
@@ -91,7 +98,7 @@ of sequence tags are included by default.
     args = parser.parse_args()
     return args
 
-def next_token_prediction(text_list, tokenizer, max_len=512, name_header="", inc_tags=(1,1)):
+def next_token_prediction(text_list, tokenizer, max_len=512, name_header="", inc_tags=(1,1), pad=True):
     EOS, BOS = inc_tags
     FEATURE_LIST = []
     LABELS_LIST  = []
@@ -100,6 +107,9 @@ def next_token_prediction(text_list, tokenizer, max_len=512, name_header="", inc
         
         feature = np.asarray(complete[:-1], dtype=np.int64)
         label   = np.asarray(complete[1:], dtype=np.int64)
+        if pad:
+            feature = np.pad(feature, pad_width=[0,max_len - len(feature)], constant_values=tokenizer.pad_id)
+            label = np.pad(label, pad_width=[0,max_len - len(label)], constant_values=-100)
 
         FEATURE_LIST.append(feature)
         LABELS_LIST.append(label)
@@ -109,7 +119,7 @@ def next_token_prediction(text_list, tokenizer, max_len=512, name_header="", inc
     label_save = np.asarray(LABELS_LIST, dtype="O")
     np.save(os.path.join(__location__, f"compiled-datasets/{name_header}-Text-Generation-Labels.npy"), label_save)
     
-def fill_empty(text_list, tokenizer, padding_id, missing_chance=0.1, max_len=512, name_header=", ", inc_tags=(1,1)):
+def fill_empty(text_list, tokenizer, padding_id, missing_chance=0.1, max_len=512, name_header=", ", inc_tags=(1,1), pad=True):
     EOS, BOS = inc_tags
     FEATURE_LIST = []
     LABELS_LIST  = []
@@ -126,6 +136,10 @@ def fill_empty(text_list, tokenizer, padding_id, missing_chance=0.1, max_len=512
         
         masked = np.asarray(predictor[:-1], dtype=np.int64)
         unmasked   = np.asarray(predictor[1:], dtype=np.int64)
+        
+        if pad:
+            feature = np.pad(feature, pad_width=[0,max_len - len(feature)], constant_values=tokenizer.pad_id)
+            label = np.pad(label, pad_width=[0,max_len - len(label)], constant_values=-100)
         
         FEATURE_LIST.append(masked)
         LABELS_LIST.append(unmasked)
@@ -144,6 +158,7 @@ if __name__ == "__main__":
     MAX_LENGTH_ = args.length       # Truncation length of tokeniser
     _HIDE_RATE_ = args.hide_rate    # Hidden rate of tokens
     _ADD_ROLES_ = args.roles        # Add roles to text useful for chatbot
+    ADDING_PAD_ = args.pad
     _OPERATION_ = args.operation    # Which operation to perform
     ADDING_TAGS = args.tags         # Adds <bos>/<eos> tags
 
@@ -163,7 +178,7 @@ if __name__ == "__main__":
     CLEANR = re.compile('<.*?>|&([a-z0-9]+|#[0-9]{1,6}|#x[0-9a-f]{1,6});')   
     
     tokenizer = SimpleTokenizer()
-    with open(DIR_OF_VOCAB_, "r", encoding="utf-8") as f:
+    with open(DIR_OF_VOCAB_, "r", encoding="utf-8") as f: 
         vocab = json.load(f)
     tokenizer.vocab = vocab
     tokenizer.inv_vocab = {int(i): w for w, i in vocab.items()}
@@ -175,10 +190,10 @@ if __name__ == "__main__":
     print("Loading dataset to list")
     for text in df.iterrows():
         if COLUMN_NUMS == 2:
-            col_text_1 = re.sub(CLEANR, '', unidecode(text[1][0]))
-            col_text_2 = re.sub(CLEANR, '', unidecode(text[1][1]))
+            col_text_1 = re.sub(CLEANR, '', unidecode(str(text[1][0])))
+            col_text_2 = re.sub(CLEANR, '', unidecode(str(text[1][1])))
         else:
-            col_text_1 = re.sub(CLEANR, '', unidecode(text[1][0]))
+            col_text_1 = re.sub(CLEANR, '', unidecode(str(text[1][0])))
             col_text_2 = " " 
         if _ADD_ROLES_:
             text_list.append(
@@ -191,14 +206,13 @@ if __name__ == "__main__":
 
     print("Processing dataset")
     if _OPERATION_ == 0:
-        next_token_prediction(text_list, tokenizer=tokenizer, max_len=MAX_LENGTH_, name_header=NPY_DS_NAME, inc_tags=INC_TAGS)
+        next_token_prediction(text_list, tokenizer=tokenizer, max_len=MAX_LENGTH_, name_header=NPY_DS_NAME, inc_tags=INC_TAGS, pad=ADDING_PAD_)
     elif _OPERATION_ == 1:
-        fill_empty(text_list, tokenizer=tokenizer, missing_chance=_HIDE_RATE_, padding_id=tokenizer.unk_id, max_len=MAX_LENGTH_, name_header=NPY_DS_NAME, inc_tags=INC_TAGS)
+        fill_empty(text_list, tokenizer=tokenizer, missing_chance=_HIDE_RATE_, padding_id=tokenizer.unk_id, max_len=MAX_LENGTH_, name_header=NPY_DS_NAME, inc_tags=INC_TAGS, pad=ADDING_PAD_)
     elif _OPERATION_ == -1:
         print("Debugging works and files load")
     else:
-        fill_empty(text_list, tokenizer=tokenizer, missing_chance=_HIDE_RATE_, padding_id=tokenizer.unk_id, max_len=MAX_LENGTH_, name_header=NPY_DS_NAME, inc_tags=INC_TAGS)
-        next_token_prediction(text_list, tokenizer=tokenizer, max_len=MAX_LENGTH_, name_header=NPY_DS_NAME, inc_tags=INC_TAGS)
-
+        fill_empty(text_list, tokenizer=tokenizer, missing_chance=_HIDE_RATE_, padding_id=tokenizer.unk_id, max_len=MAX_LENGTH_, name_header=NPY_DS_NAME, inc_tags=INC_TAGS, pad=ADDING_PAD_)
+        next_token_prediction(text_list, tokenizer=tokenizer, max_len=MAX_LENGTH_, name_header=NPY_DS_NAME, inc_tags=INC_TAGS, pad=ADDING_PAD_)
     print("Finished")
 
