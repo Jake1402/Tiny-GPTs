@@ -89,13 +89,13 @@ What's the capital of Italy?, Rome.,
 ```
 Datasets should be in `csv` format and no feature an index column one or two columns. An example of a pretraining dataset would be the `mini-wiki-texts.csv` or the `movie-reviews.csv` datasets. As both of these datasets don't include a second column yet can still teach a model to learn text and how sentences should be structured. An example of a finetuning dataset would be the `instruction-texts.csv` as the dataset features an input and response column.
 
-To prepare dataset call `eda.py` in the command line. 
+To prepare dataset call `ds_builder.py` in the command line. 
 ```cmd
-(pytorch) D:\Python\LLM\dataset>python eda.py -h
-usage: eda.py [-h] --vocab VOCAB --csv CSV --columns COLUMNS [--name NAME] 
+(pytorch) D:\Python\LLM\dataset>python ds_builder.py -h
+usage: ds_builder.py [-h] --vocab VOCAB --csv CSV --columns COLUMNS [--name NAME] 
 [--length LENGTH] [--hide_rate HIDE_RATE] [--roles ROLES] [--operation OPERATION]
 
-EDA.py Will build your datasets as save them in npy file format. Output format will be the tokenised data with features being the initial inputs and labels the output shifted right. Beginning/End of sequence tags are included by default.
+ds_builder.py Will build your datasets as save them in npy file format. Output format will be the tokenised data with features being the initial inputs and labels the output shifted right. Beginning/End of sequence tags are included by default.
 
 options:
   -h, --help            show this help message and exit
@@ -115,7 +115,7 @@ options:
                                     3 : Generates both.
 ```
 
-`eda.py` will generate `.npy` files containing a compiled dataset. It will create two files a `NAME-OPERATION-labels.npy` and a `NAME-OPERATION-features.npy` file. The flags will do the following.
+`ds_builder.py` will generate `.npy` files containing a compiled dataset. It will create two files a `NAME-OPERATION-labels.npy` and a `NAME-OPERATION-features.npy` file. The flags will do the following.
 ```
 vocab   - Give the name of the vocab to use in the 'vocab' directory.
 csv     - Give the name of the csv dataset you'd like to compile.
