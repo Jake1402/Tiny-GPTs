@@ -96,7 +96,7 @@ def next_token_prediction(text_list, tokenizer, max_len=512, name_header="", inc
     FEATURE_LIST = []
     LABELS_LIST  = []
     for text in text_list:
-        complete = tokenizer.encode(text, add_bos=True, add_eos=True, max_len=max_len)
+        complete = tokenizer.encode(text, add_bos=BOS, add_eos=EOS, max_len=max_len)
         
         feature = np.asarray(complete[:-1], dtype=np.int64)
         label   = np.asarray(complete[1:], dtype=np.int64)
@@ -201,3 +201,4 @@ if __name__ == "__main__":
         next_token_prediction(text_list, tokenizer=tokenizer, max_len=MAX_LENGTH_, name_header=NPY_DS_NAME, inc_tags=INC_TAGS)
 
     print("Finished")
+
