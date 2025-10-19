@@ -36,30 +36,64 @@ load_model(
 	name : str  # The file path and name e.g. models/mini-GPT
 ) -> GPT        # Type hinting, the function returns a GPT model.
 ```
-
 As can be seen from above creating, saving and loading has been made as simple as possible. 
 
+The GPT class can also be imported into different projects and trained for those purposes too including for [ViT](https://arxiv.org/abs/2010.11929) if required. The models `forward` method also include extra parameters to allow for better interactions these include.
+```python
+GPT.forward(
+	inputs : Torch.tensor, # The inputs to the model
+	train : bool,          # Model is in training or not
+	temperature : float,   # The temperature used for sampling from outputs
+	top_k : int            # The topk outputs only.
+)
+```
 ## Training your own model
-To make training these models as easy possible I've broken down training into two different files. These files are named `Training-pretrain.py` and `Training-finetune.py` the correct way to train your models is to call pretrain first, this is designed to teach the models the basic of text like nouns, verbs, and sentiments for example. The model at this stage won't be suitable for tasks but will have a "background knowledge" in how text should be structured. After this we then fine tune the model for desired traits, these traits can be text generation or filling in missing characters that maybe missing from the string.
+To make training models as easy possible I've broken down training into several different phases. These phases are as follows:
+- Building the model with `Builder-Models.py`
+- Building the model vocab with `Builder-Vocab.py`
+- Building the dataset with `Builder-ds.py`
+- Training the model with either `Training-Pytorch-SingleGPU.py` or `Training-Lightning-MultiGPU.py`.
 
-#### Building Vocabs
-Inside the `datasets` directory I have two files named [simple_tokenizer.py](dataset/simple_tokenizer.py) and [vocab_builder.py](dataset/vocab_builder.py) (As a disclaimer GPT-5 build the main tokenizer. I modified code for suffix and concatenation removal) Vocab building is done rather easily by calling [vocab_builder.py](dataset/vocab_builder.py) in the command line.
+### Building Model
+The building model is crucial in allowing for flexibility, this phase lets the user choose the number of layers, vocab size, embedding dimension, and even the type of transformer (Encoder or Decoder only). To run [Builder-Models.py](Builder-Models.py) in the command line type `python Builder-Models.py -h`
 ```cmd
-(pytorch) D:\Python\LLM\dataset>python vocab_builder.py -h
-usage: vocab_builder.py [-h] --name NAME [--f F] --csv CSV [--skip SKIP]
+usage: Builder-Models.py [-h] --vocab VOCAB --d_model D_MODEL --layers LAYERS 
+[--masked MASKED] --num_heads NUM_HEADS [--max_tokens MAX_TOKENS] [--name NAME]
 
-vocab_builder.py will build your vocab for you and store it in a json file. It
-will only add words if they appear more than F number of times. This way random
-phrases or misspellings are more likely to be avoided. It will build its dataset
-from a csv dataset file. I recommend using the mini-wiki-text.csv file.
+    Model-Builder.py is responsible for building your model
+    in a way that allows for easy training in the training scripts.
+    It will by default save your models to the 'models' subfolder.
+
+
+options:
+  -h, --help            show this help message and exit
+  --vocab VOCAB         The vocab size of the model.
+  --d_model D_MODEL     The models dimension.
+  --layers LAYERS       The number of transformer layers.
+  --masked MASKED       Masked attention or not (Encoder vs Decoder, default is Decoder True).
+  --num_heads NUM_HEADS
+                        The number of attention heads (MUST BE A FACTOR OF d_model)
+  --max_tokens MAX_TOKENS
+                        The maximum context window of the model (Defualt 512).
+  --name NAME           The name of the model.
+```
+
+Upon entering the desired parameters, the script will generate a `.pt` and `.json` file containing the model weights and the python parameters to load the model with the built in `load_model(str : name) -> GPT` function as discussed above.
+#### Building Vocabs
+[Tokeniser.py](Tokeniser.py) needs a suitable vocab, we generate these using [Builder-Vocab.py](Builder-Vocab.py) (As a disclaimer GPT-5 built the initial tokenizer which was then modified for better efficiency) Vocab building is done rather easily by calling [Builder-Vocab.py](Builder-Vocab.py) in the command line.
+```cmd
+(pytorch) D:\Python\Tiny-GPTs>python Builder-Vocab.py -h
+usage: Builder-Vocab.py [-h] --name NAME [--f F] --csv CSV [--skip SKIP]
+
+Builder-Vocab.py will build your vocab for you and store it in a json file. It will only add words if they appear more than F number of times. This way random phrases or misspellings are more likely to be avoided. It will build its
+dataset from a csv dataset file. I recommend using the mini-wiki-text.csv file.
 
 options:
   -h, --help   show this help message and exit
   --name NAME  Name of new vocab
   --f F        Add words if appear more than F. Default is 5.
   --csv CSV    Read from csv dataset
-  --skip SKIP  number of rows to skip in dataset. Prevents large dataset
-               explosion while keeping the vocab diverse. Default is 10.
+  --skip SKIP  number of rows to skip in dataset. Prevents large dataset explosion                while keeping the vocab diverse. Default is 10.
 ```
 
 This will generate a `NAME-vocab.json` file in the vocabs folder on top of generating a vocab it will also scrub out any non unicode characters and remove any html tags. The first 8 indexes in your vocab will be special tokens and words, these special tokens are.
@@ -89,13 +123,14 @@ What's the capital of Italy?, Rome.,
 ```
 Datasets should be in `csv` format and no feature an index column one or two columns. An example of a pretraining dataset would be the `mini-wiki-texts.csv` or the `movie-reviews.csv` datasets. As both of these datasets don't include a second column yet can still teach a model to learn text and how sentences should be structured. An example of a finetuning dataset would be the `instruction-texts.csv` as the dataset features an input and response column.
 
-To prepare dataset call `ds_builder.py` in the command line. 
+To prepare dataset call Builder-DS.py` in the command line. 
 ```cmd
-(pytorch) D:\Python\LLM\dataset>python ds_builder.py -h
-usage: ds_builder.py [-h] --vocab VOCAB --csv CSV --columns COLUMNS [--name NAME] 
-[--length LENGTH] [--hide_rate HIDE_RATE] [--roles ROLES] [--operation OPERATION]
+usage: Builder-DS.py [-h] --vocab VOCAB --csv CSV --columns COLUMNS [--name NAME] [--length LENGTH] [--hide_rate HIDE_RATE] [--roles ROLES] [--pad PAD] [--operation OPERATION] [--tags TAGS]
 
-ds_builder.py Will build your datasets as save them in npy file format. Output format will be the tokenised data with features being the initial inputs and labels the output shifted right. Beginning/End of sequence tags are included by default.
+ds_builder.py Will build your datasets as save them in npy file format.
+Output format will be the tokenised data with features being the
+initial inputs and labels the output shifted right. Beginning/End
+of sequence tags are included by default.
 
 options:
   -h, --help            show this help message and exit
@@ -106,31 +141,67 @@ options:
   --length LENGTH       truncate examples to desired length (default 512)
   --hide_rate HIDE_RATE
                         The chance of hiding tokens (default 0.2)
-  --roles ROLES         Decides to add roles like OPERATOR/BOT.
+  --roles ROLES         Decides to add roles like OPERATOR/AGENT
+  --pad PAD             Decides pad sequences to max length default true
   --operation OPERATION
+                        Decides which dataset to generate:
+                                0 : Next token prediction
+                                1 : Fill the empty spaces
+                                2 : Generates both.
 
-                                Decides which dataset to generate:
-                                    0 : Next token prediction
-                                    2 : Fill the empty spaces
-                                    3 : Generates both.
+  --tags TAGS           Decides if <eos>/<bos> tags are added:
+                                0 : None
+                                1 : <bos> (added to front of user prompt)
+                                2 : <eos> (added to end of AI text)
+                                3 : <bos> and <eos> in 1/2 positions.
+                                Default is None are added
 ```
 
-`ds_builder.py` will generate `.npy` files containing a compiled dataset. It will create two files a `NAME-OPERATION-labels.npy` and a `NAME-OPERATION-features.npy` file. The flags will do the following.
-```
-vocab   - Give the name of the vocab to use in the 'vocab' directory.
-csv     - Give the name of the csv dataset you'd like to compile.
-columns - The number of columns in csv dataset.
-name    - The name for the compiled dataset.
-length  - Truncate large texts down to a max size.
-hide_rate - Probability to hide a token when masking for completion.
-roles   - Enable roles, use for finetuning.
-operation - Which operation we're compiling for, text generation, masking or both.
-```
-
-You can use custom datasets if you'd like, this tool is just to streamline training if you desire a fast simple solution. I would recommend you compile and build your own datasets.
+`Builder-DS.py` will generate `.npy` files containing a compiled dataset. It will create two files a `NAME-OPERATION-labels.npy` and a `NAME-OPERATION-features.npy` file. You can use custom datasets if you'd like, this tool is just to streamline training if you desire a fast simple solution. I would recommend you compile and build your own datasets.
 
 #### Training your model
-For training your model I would HEAVILY recommend renting a GPU from the cloud. I used [Vast.ai](vast.ai) for training my larger models on a RTX 5090 or H200 if required. Smaller models under 30M parameters could be trained at home. Overall I have two files for training models, `Training-pretraining.py` and `Training-finetuning.py` both of these files are practically identical and will be merged in future under one file.  You should run `Training-pretraining.py` first then followed by `Training-finetuning.py` you must change the model to train in `Training-finetuning.py` in order to get satisfactory results. This is only a temporary training solution and will be updated soon enough to be more efficient.
+For training your model I would HEAVILY recommend renting a GPU from the cloud particularly if you're using larger datasets and models. Smaller models under 30M parameters could be trained at home. Overall I have two files for training models, [Training-Pytorch-SingleGPU.py](Training-Pytorch-SingleGPU.py) and [Training-Lightning-MultiGPU.py](Training-Lightning-MultiGPU.py). Both of these files take the same parameters as input except for the Lightning script which has an extra parameter named `gpus` which takes in the value for the number of GPUs on your system. An important note to remember is  [Training-Lightning-MultiGPU.py](Training-Lightning-MultiGPU.py) was designed with cloud training on Linux systems, as a result if you have any problems in using the script I'd recommend changing `DDPStrategy` backend to `nccl` or any other strategy.
+
+```cmd
+usage: Training-PREFFERED-METHOD.py [-h] --model MODEL --vocab VOCAB --training_set TRAINING_SET --gpus GPUS [--epochs EPOCHS] [--batch BATCH] [--lr LR] [--grad_norm GRAD_NORM]
+
+    Training-Lightning-MultiGPU.py is responsible for training your models by
+    utilising multiple GPUs. This is done by utilising PyTorch Lightning for safely
+    training on multiple GPUs.
+
+options:
+  -h, --help            show this help message and exit
+  --model MODEL         The name of your generated model.
+  --vocab VOCAB         The name of your vocab file.
+  --training_set TRAINING_SET
+                        The name of your training set (files must end in                                   Feature/Label.npy DON'T INCLUDE)
+  --gpus GPUS           Number of GPUs to use during training (Default 1).
+  --epochs EPOCHS       Number of epochs for training (Default 30).
+  --batch BATCH         The batch size of your training data (Default 64).
+  --lr LR               Learning rate for the model (Default 1e-3).
+  --grad_norm GRAD_NORM
+                        Gradient clipping to stabilise gradients (Default 1.0).
+```
+
+During training models will be saved at an interval of every 5 epochs.
+
+### Running Models
+
+Models can be run via the [Run-Blank-Completion.py](Run-Blank-Completion.py) script, this will run the models in a small environment. The models, however, will have no context as context gets wiped after every message sent to the model.
+
+```cmd
+usage: Run-Blank-Completion.py [-h] --model MODEL --vocab VOCAB
+
+    Run-Blank-Completion.py is an interface to allow the user to interact with
+    there model. It requires two arguments `model` and `vocab`.
+
+
+options:
+  -h, --help     show this help message and exit
+  --model MODEL  The name of your generated model.
+  --vocab VOCAB  The name of your models vocab.
+```
+
 # Final Remarks and References
 To finish off I started this project to better understand how LLMs and transformers work. To that I say this project was an overwhelming success, I've learned so much from tinkering with these LLMs in the last few weeks. 
 
