@@ -2,14 +2,40 @@ import torch
 import json
 
 from GPT import GPT, load_model
-from dataset.simple_tokenizer import SimpleTokenizer, SUFFIXES, SPECIAL_SPACES
+from Tokeniser import SimpleTokenizer, SPECIAL_SPACES
+
+from argparse import RawTextHelpFormatter
+import argparse
+
+
+def args_builder():
+    parser = argparse.ArgumentParser(
+    description="""
+    Run-Blank-Completion.py is an interface to allow the user to interact with
+    there model. It requires two arguments `model` and `vocab`.
+    """, formatter_class=RawTextHelpFormatter)
+    parser.add_argument(
+        "--model",
+        type=str,
+        required=True,
+        help="The name of your generated model."
+    )
+    parser.add_argument(
+        "--vocab",
+        type=str,
+        required=True,
+        help="The name of your models vocab."
+    )
+
+    args = parser.parse_args()
+    return args
 
 
 if __name__ == "__main__":
-    
-    torch.cuda.empty_cache()
-    DIR_OF_VOCAB_ = "dataset/vocabs/wiki-vocab.json"
-    MODEL_TO_USE_ = "./models/Finetuned-10"
+
+    args = args_builder()
+    DIR_OF_VOCAB_ = f"vocabs/{args.vocab}.json"
+    MODEL_TO_USE_ = f"./models/{args.model}"
     
     tokenizer = SimpleTokenizer()
     with open(DIR_OF_VOCAB_, "r", encoding="utf-8") as f:
@@ -17,33 +43,16 @@ if __name__ == "__main__":
     tokenizer.vocab = vocab
     tokenizer.inv_vocab = {int(i): w for w, i in vocab.items()}
     tokenizer.fitted = True
-    
     with open(f"{MODEL_TO_USE_}.json", "r", encoding="utf-8") as f:
         vocab = json.load(f)
     
-    VOCAB_SIZE = 12110
-    D_MODEL    = 512
-    LAYERS     = 24
-    MASKED     = 1
-    NUM_HEADS  = 8
-    MAX_TOKENS = 2048
-
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    badgerMLM = GPT(
-        vocab_size=VOCAB_SIZE,
-        d_model=D_MODEL,
-        layers=LAYERS,
-        masked=MASKED,
-        num_heads=NUM_HEADS,
-        max_tokens=MAX_TOKENS
-    ).to("cuda:0")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = load_model(MODEL_TO_USE_).to(device)
+    MAX_TOKENS = model.max_tokens
+    model.eval()
     
-    badgerMLM = load_model(MODEL_TO_USE_)
-    
-    print(f"Parameter count : {badgerMLM.returnParams()}")
+    print(f"Parameter count : {model.returnParams()}")
 
-    badgerMLM.load_state_dict(torch.load("./models/Finetuned-10.pt", weights_only=True))
-    badgerMLM.train(False)
     sequence_len = 0
     text = "STARTING"
     encoded = []
@@ -56,12 +65,12 @@ if __name__ == "__main__":
                 text = input(f"Enter prompt - ")    # Get the user input and add to old data.
                 if "<EXIT>" in text:
                     break
-                encoded += tokenizer.encode(text, add_bos=True, add_eos=False, max_len=256)   # Encode it
+                encoded += tokenizer.encode(text, add_bos=True, add_eos=True, max_len=MAX_TOKENS)   # Encode it
             sequence_len += 1   
-            output = badgerMLM.forward(torch.tensor(encoded).unsqueeze(0).to(device), temperature=0.8).cpu()
+            output = model.forward(torch.tensor(encoded).unsqueeze(0).to(device), temperature=0.6, top_k=10).cpu()
             encoded.append(output.squeeze(0).tolist()[-1])
-            decoded = tokenizer.decode(output.squeeze(0).tolist(), skip_specials=False)
-            if decoded.split()[-1] in (SUFFIXES+SPECIAL_SPACES):
+            decoded = tokenizer.decode(output.squeeze(0).tolist(), skip_specials=True)
+            if decoded.split()[-1] in (SPECIAL_SPACES):
                 text += decoded.split()[-1]
             else:
                 text += " " + decoded.split()[-1]

@@ -104,7 +104,7 @@ class Block(nn.Module):
 
 """
     A GPT Arhcitecture as discussed in the paper:
-        - Language models are few shot learners
+        - Improving Language Understanding by Generative Pre-Training
     The process for this implementation allows for easy
     modification and customisability of the GPT architecture.
 """
@@ -137,10 +137,10 @@ class GPT(nn.Module):
             )
 
         self.projector = nn.Sequential(                               # Final layer in the transformer
-            nn.Linear(in_features=d_model, out_features=vocab_size),  # Language modelling head.
-        )
+            nn.Linear(in_features=d_model, out_features=vocab_size),  # Language modelling head to chose the
+        )                                                             # next token in the sequence.
 
-    def forward(self, inputs, train=False, temperature=1):
+    def forward(self, inputs, train=False, temperature=1, top_k=20):
         """
             Inputs is an ID tensor. It should be a vector containing
             integer values. These values represent potential 
@@ -159,7 +159,9 @@ class GPT(nn.Module):
 
         if train:
             return one_hot_output
-        probability = torch.distributions.Categorical(probs=torch.nn.functional.softmax(one_hot_output/temperature, dim=-1))
+        top_k_vals, index = torch.topk(one_hot_output, k=top_k, dim=-1)
+        top_k_probs = torch.zeros_like(one_hot_output).scatter_(dim=-1, index=index, src=top_k_vals)
+        probability = torch.distributions.Categorical(probs=torch.nn.functional.softmax(top_k_probs/temperature, dim=-1))
         return probability.sample()
 
     def returnParams(self):
