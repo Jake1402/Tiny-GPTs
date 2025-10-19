@@ -1,4 +1,5 @@
 unidecode
 pytorch==2.4.1
 pandas
+Lightning
 numpy
