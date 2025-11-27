@@ -1,4 +1,4 @@
-# Tiny-GPTs
+# Torch-GPTs
 Tiny-GPTs is a simple way to build custom encoder/decoder only models from scratch. Allowing people to better understand how they work. The repository includes ways to pretrain and finetune your LLM, compile datasets into npy files, and create a tokenizer for them to use. unfortunately ways to train via reinforcement learning haven't been included yet but should be added later down the line using [Huggingfaces TRL Library](https://huggingface.co/docs/trl/en/index). 
 
 ## How to install
