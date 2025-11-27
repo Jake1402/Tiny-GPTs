@@ -1,5 +1,5 @@
 # Torch-GPTs
-Tiny-GPTs is a simple way to build custom encoder/decoder only models from scratch. Allowing people to better understand how they work. The repository includes ways to pretrain and finetune your LLM, compile datasets into npy files, and create a tokenizer for them to use. unfortunately ways to train via reinforcement learning haven't been included yet but should be added later down the line using [Huggingfaces TRL Library](https://huggingface.co/docs/trl/en/index). 
+Torch-GPTs is a simple way to build custom encoder/decoder only models from scratch. Allowing people to better understand how they work. The repository includes ways to pretrain and finetune your LLM, compile datasets into npy files, and create a tokenizer for them to use. unfortunately ways to train via reinforcement learning haven't been included yet but should be added later down the line using [Huggingfaces TRL Library](https://huggingface.co/docs/trl/en/index). 
 
 ## How to install
 To install the model you need to have all the requirements. The requirements for this model are all contained in [requirements](./requirements.txt). I used a Anaconda environment for my install so I'd recommend you do the same or do something similar. To begin install [PyTorch](https://pytorch.org/get-started/locally/) on your machine, it's important you use at least PyTorch 2.4 or higher. To do this follow the guide found on their website.
@@ -7,7 +7,7 @@ Once PyTorch has been installed simply follow the command below.
 ```
 pip install -r requirements.txt
 ```
-This will begin to install all the necessary libraries in order to successfully run Tiny-GPTs. I've also included two simple models that had marginal success on text completion and text generation.
+This will begin to install all the necessary libraries in order to successfully run Torch-GPTs. I've also included two simple models that had marginal success on text completion and text generation.
 
 ## Creating/Saving/Loading the model
 The file GPT contains three items. These are; the class `GPT`, a function called `save_model(name, model)`, and a function called `load_model(name)`. The class `GPT` is the `nn.Module` that allows users to build a GPT style transformer (encoder or decoder only). It requires the following parameters:
@@ -82,7 +82,7 @@ Upon entering the desired parameters, the script will generate a `.pt` and `.jso
 #### Building Vocabs
 [Tokeniser.py](Tokeniser.py) needs a suitable vocab, we generate these using [Builder-Vocab.py](Builder-Vocab.py) (As a disclaimer GPT-5 built the initial tokenizer which was then modified for better efficiency) Vocab building is done rather easily by calling [Builder-Vocab.py](Builder-Vocab.py) in the command line.
 ```cmd
-(pytorch) D:\Python\Tiny-GPTs>python Builder-Vocab.py -h
+(pytorch) D:\Python\Torch-GPTs>python Builder-Vocab.py -h
 usage: Builder-Vocab.py [-h] --name NAME [--f F] --csv CSV [--skip SKIP]
 
 Builder-Vocab.py will build your vocab for you and store it in a json file. It will only add words if they appear more than F number of times. This way random phrases or misspellings are more likely to be avoided. It will build its
